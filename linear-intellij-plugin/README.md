@@ -1,5 +1,8 @@
 # Linear IntelliJ Plugin
 
+[![Latest Release](https://img.shields.io/github/v/release/rsheasby/Intellij-Linear?style=for-the-badge&logo=github)](https://github.com/rsheasby/Intellij-Linear/releases/latest)
+[![Download](https://img.shields.io/badge/Download-Plugin-blue?style=for-the-badge&logo=intellij-idea)](https://github.com/rsheasby/Intellij-Linear/releases/latest/download/linear-intellij-plugin-1.0.1.zip)
+
 An IntelliJ IDEA plugin that integrates Linear project management directly into your IDE. View and manage your Linear tasks from a convenient sidebar without leaving your development environment.
 
 ## Features
@@ -11,6 +14,17 @@ An IntelliJ IDEA plugin that integrates Linear project management directly into 
 - Secure API key storage in IntelliJ settings
 
 ## Installation
+
+### Option 1: Download from Releases (Recommended)
+
+1. **[Download the latest release](https://github.com/rsheasby/Intellij-Linear/releases/latest)** from GitHub
+2. Open IntelliJ IDEA
+3. Go to **File → Settings → Plugins** (or **IntelliJ IDEA → Preferences → Plugins** on macOS)
+4. Click the gear icon ⚙️ and select **Install Plugin from Disk...**
+5. Select the downloaded `.zip` file
+6. Restart IntelliJ IDEA
+
+### Option 2: Build from Source
 
 1. Build the plugin:
    ```bash

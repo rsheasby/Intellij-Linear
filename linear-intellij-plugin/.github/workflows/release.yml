@@ -1,0 +1,103 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.2)'
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
+        
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+        
+      - name: Build plugin
+        run: ./gradlew buildPlugin
+        
+      - name: Verify plugin
+        run: ./gradlew verifyPlugin
+        
+      - name: Get version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+          echo "VERSION_NUMBER=${VERSION#v}" >> $GITHUB_OUTPUT
+          
+      - name: Update version in build.gradle.kts
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          sed -i 's/version = "[^"]*"/version = "${{ steps.version.outputs.VERSION_NUMBER }}"/' build.gradle.kts
+          
+      - name: Rebuild with updated version
+        if: github.event_name == 'workflow_dispatch'
+        run: ./gradlew buildPlugin
+        
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.version.outputs.VERSION }}
+          release_name: Linear IntelliJ Plugin ${{ steps.version.outputs.VERSION }}
+          body: |
+            ## Linear IntelliJ Plugin ${{ steps.version.outputs.VERSION }}
+            
+            ### Installation
+            1. Download the plugin ZIP file below
+            2. Open IntelliJ IDEA
+            3. Go to **File → Settings → Plugins**
+            4. Click the gear icon and select **Install Plugin from Disk...**
+            5. Select the downloaded ZIP file
+            6. Restart IntelliJ IDEA
+            
+            ### What's Changed
+            - Bug fixes and improvements
+            
+            **Full Changelog**: https://github.com/${{ github.repository }}/compare/v${{ github.event.before }}...${{ steps.version.outputs.VERSION }}
+          draft: false
+          prerelease: false
+          
+      - name: Find plugin file
+        id: plugin_file
+        run: |
+          PLUGIN_FILE=$(find build/distributions -name "*.zip" | head -1)
+          echo "PLUGIN_FILE=${PLUGIN_FILE}" >> $GITHUB_OUTPUT
+          echo "PLUGIN_NAME=$(basename ${PLUGIN_FILE})" >> $GITHUB_OUTPUT
+          
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.plugin_file.outputs.PLUGIN_FILE }}
+          asset_name: ${{ steps.plugin_file.outputs.PLUGIN_NAME }}
+          asset_content_type: application/zip
